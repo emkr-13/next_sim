@@ -113,7 +113,7 @@ export default function AccountsPage() {
         url += `&search=${searchTerm}`;
       }
 
-      if (accountType) {
+      if (accountType && accountType !== "all") {
         url += `&type=${accountType}`;
       }
 
@@ -222,7 +222,7 @@ export default function AccountsPage() {
                   <SelectValue placeholder="Account Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="customer">Customer</SelectItem>
                   <SelectItem value="supplier">Supplier</SelectItem>
                 </SelectContent>

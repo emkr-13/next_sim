@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { DivideIcon as LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { DivideIcon as LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavItemProps {
   href: string;
-  icon: LucideIcon;
+  icon: typeof LucideIcon;
   title: string;
   isCollapsed?: boolean;
   isChild?: boolean;
@@ -30,11 +30,15 @@ const NavItem = ({
 }: NavItemProps) => {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
-  
-  const handleItemClick = () => {
-    if (onClick) onClick();
-    if (subItems && subItems.length > 0 && onExpandToggle) {
-      onExpandToggle();
+
+  const handleItemClick = (e: React.MouseEvent) => {
+    if (subItems && subItems.length > 0) {
+      e.preventDefault();
+      if (onExpandToggle) {
+        onExpandToggle();
+      }
+    } else if (onClick) {
+      onClick();
     }
   };
 
@@ -44,11 +48,11 @@ const NavItem = ({
         href={href}
         onClick={onClick}
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-          isActive 
-            ? 'bg-accent text-accent-foreground' 
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-          'pl-10' // Indent child items
+          "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+          isActive
+            ? "bg-accent text-accent-foreground"
+            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          "pl-10" // Indent child items
         )}
       >
         <span>{title}</span>
@@ -58,52 +62,56 @@ const NavItem = ({
 
   return (
     <div>
-      <div
-        onClick={handleItemClick}
-        className={cn(
-          'group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-          isActive 
-            ? 'bg-accent text-accent-foreground' 
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-        )}
-      >
-        <Icon className="h-5 w-5 flex-shrink-0" />
-        {!isCollapsed && (
-          <div className="flex flex-1 items-center justify-between">
-            {subItems && subItems.length > 0 ? (
-              <button 
-                className="flex w-full items-center justify-between"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onExpandToggle) onExpandToggle();
-                }}
-              >
-                <span>{title}</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={cn(
-                    "h-4 w-4 transition-transform",
-                    isExpanded ? "rotate-180" : "rotate-0"
-                  )}
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-            ) : (
+      {subItems && subItems.length > 0 ? (
+        <div
+          onClick={handleItemClick}
+          className={cn(
+            "group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            isActive
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
+        >
+          <Icon className="h-5 w-5 flex-shrink-0" />
+          {!isCollapsed && (
+            <div className="flex flex-1 items-center justify-between">
               <span>{title}</span>
-            )}
-          </div>
-        )}
-      </div>
-      
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  isExpanded ? "rotate-180" : "rotate-0"
+                )}
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link
+          href={href}
+          onClick={onClick}
+          className={cn(
+            "group flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            isActive
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          )}
+        >
+          <Icon className="h-5 w-5 flex-shrink-0" />
+          {!isCollapsed && <span>{title}</span>}
+        </Link>
+      )}
+
       {!isCollapsed && subItems && subItems.length > 0 && isExpanded && (
         <div className="mt-1 space-y-1">
           {subItems.map((item) => (
