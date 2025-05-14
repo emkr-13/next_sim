@@ -5,8 +5,9 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Button } from '@/components/ui/button';
 import NavItem from '@/components/NavItem';
 import { cn } from '@/lib/utils';
-import { Menu, X, LayoutDashboard, Package, User, Tag, Store } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Package, User, Tag, Store, Users, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from 'next-themes';
 
 interface SidebarProps {
   className?: string;
@@ -18,6 +19,7 @@ const SidebarComponent = ({ className }: SidebarProps) => {
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -39,6 +41,10 @@ const SidebarComponent = ({ className }: SidebarProps) => {
         ? prev.filter(key => key !== itemKey) 
         : [...prev, itemKey]
     );
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -117,18 +123,18 @@ const SidebarComponent = ({ className }: SidebarProps) => {
               onExpandToggle={() => toggleExpandItem('inventory')}
             />
             <NavItem
-              href="/account"
-              icon={User}
-              title="Account"
+              href="/accounts"
+              icon={Users}
+              title="Accounts"
               isCollapsed={isCollapsed}
               onClick={closeMobileSidebar}
             />
           </nav>
         </div>
 
-        {!isCollapsed && (
-          <div className="border-t p-4">
-            <div className="flex flex-col gap-2">
+        <div className="mt-auto border-t p-4">
+          <div className="flex flex-col gap-2">
+            {!isCollapsed && (
               <div className="flex items-center gap-2">
                 <div className="rounded-full bg-primary/10 p-1">
                   <User className="h-5 w-5 text-primary" />
@@ -140,16 +146,36 @@ const SidebarComponent = ({ className }: SidebarProps) => {
                   </span>
                 </div>
               </div>
+            )}
+            <NavItem
+              href="/account"
+              icon={User}
+              title="My Account"
+              isCollapsed={isCollapsed}
+              onClick={closeMobileSidebar}
+            />
+            <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                className="mt-2 w-full"
+                className={cn("flex-1", isCollapsed && "p-0 w-10 h-10")}
                 onClick={() => logout()}
               >
-                Logout
+                {isCollapsed ? <User className="h-4 w-4" /> : "Logout"}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleTheme}
+              >
+                {theme === 'light' ? (
+                  <Moon className="h-4 w-4" />
+                ) : (
+                  <Sun className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
-        )}
+        </div>
       </aside>
     </>
   );
