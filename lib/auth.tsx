@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('token');
       
       if (token) {
-        await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}user/logout`, {
+        await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}/auth/logout`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
