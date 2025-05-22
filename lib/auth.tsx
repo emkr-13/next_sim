@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (token) {
         try {
-          const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}user/detail`, {
+          const response = await fetch(`${process.env.BASE_URL}user/profile`, {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -58,7 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}auth/login`, {
+      console.log(process.env.BASE_URL)
+      const response = await fetch(`${process.env.BASE_URL}auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -73,7 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('refreshToken', data.data.refreshToken);
         
         // Fetch user details
-        const userResponse = await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}user/detail`, {
+        console.log(process.env.BASE_URL)
+        const userResponse = await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}user/profile`, {
           headers: {
             Authorization: `Bearer ${data.data.token}`
           }
