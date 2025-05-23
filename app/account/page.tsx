@@ -1,32 +1,42 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { User, Save } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import Layout from "@/components/Layout";
+import PageHeader from "@/components/PageHeader";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { User, Save } from "lucide-react";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
 
 export default function AccountPage() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [isPageLoading, setIsPageLoading] = useState(true);
-  const [fullname, setFullname] = useState('');
+  const [fullname, setFullname] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push("/login");
     } else if (!isLoading && isAuthenticated && user) {
-      setFullname(user.fullname || '');
+      setFullname(user.fullname || "");
       setIsPageLoading(false);
     }
   }, [isAuthenticated, isLoading, router, user]);
@@ -36,35 +46,35 @@ export default function AccountPage() {
     setIsUpdating(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
-      const response = await fetch(`${process.env.BASE_URL || 'http://localhost:3080/api/'}user/edit`, {
-        method: 'POST',
+      const response = await fetch(`${BASE_URL}user/edit`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ fullname }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        throw new Error("Failed to update profile");
       }
 
       toast({
-        title: 'Success',
-        description: 'Profile updated successfully',
+        title: "Success",
+        description: "Profile updated successfully",
       });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to update profile',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
       });
     } finally {
       setIsUpdating(false);
@@ -73,7 +83,7 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push("/login");
   };
 
   if (isLoading || isPageLoading) {
@@ -91,8 +101,8 @@ export default function AccountPage() {
           title="Account"
           description="Manage your account settings"
           breadcrumbSegments={[
-            { name: 'Home', href: '/' },
-            { name: 'Account', href: '/account', current: true },
+            { name: "Home", href: "/" },
+            { name: "Account", href: "/account", current: true },
           ]}
         />
 
@@ -110,7 +120,7 @@ export default function AccountPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={user?.email || ''}
+                    value={user?.email || ""}
                     disabled
                     className="bg-muted/50"
                   />
@@ -131,11 +141,18 @@ export default function AccountPage() {
                   <Label htmlFor="joined">Account Created</Label>
                   <Input
                     id="joined"
-                    value={user?.usercreated ? new Date(user.usercreated).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    }) : ''}
+                    value={
+                      user?.usercreated
+                        ? new Date(user.usercreated).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )
+                        : ""
+                    }
                     disabled
                     className="bg-muted/50"
                   />
@@ -166,7 +183,9 @@ export default function AccountPage() {
                   </div>
                   <div>
                     <CardTitle>Account Security</CardTitle>
-                    <CardDescription>Manage your account security settings</CardDescription>
+                    <CardDescription>
+                      Manage your account security settings
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -184,9 +203,11 @@ export default function AccountPage() {
                       This feature is coming soon.
                     </p>
                   </div>
-                  
+
                   <div className="bg-card rounded-md p-4 border">
-                    <h4 className="font-medium mb-1">Two-Factor Authentication</h4>
+                    <h4 className="font-medium mb-1">
+                      Two-Factor Authentication
+                    </h4>
                     <p className="text-sm text-muted-foreground mb-3">
                       Add an extra layer of security to your account.
                     </p>

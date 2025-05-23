@@ -1,31 +1,34 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
-import Layout from '@/components/Layout';
-import PageHeader from '@/components/PageHeader';
-import LoadingSpinner from '@/components/LoadingSpinner';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { Button } from '@/components/ui/button';
-import { Plus, Search, Edit, Trash } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import Layout from "@/components/Layout";
+import PageHeader from "@/components/PageHeader";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { Button } from "@/components/ui/button";
+import { Plus, Search, Edit, Trash } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
 
 interface Category {
   id: number;
@@ -64,36 +67,44 @@ export default function CategoryPage() {
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [pagination, setPagination] = useState<PaginationData | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState('10');
-  const [sortBy, setSortBy] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [limit, setLimit] = useState("10");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
     if (!isLoading && isAuthenticated) {
       fetchCategories();
     }
-  }, [isAuthenticated, isLoading, router, currentPage, limit, sortBy, sortOrder]);
+  }, [
+    isAuthenticated,
+    isLoading,
+    router,
+    currentPage,
+    limit,
+    sortBy,
+    sortOrder,
+  ]);
 
   const fetchCategories = async () => {
     try {
       setIsPageLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       if (!token) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
-      let url = `${process.env.BASE_URL || 'http://localhost:3080/api/'}categories/all?page=${currentPage}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
-      
+      let url = `${BASE_URL}categories/all?page=${currentPage}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+
       if (searchTerm) {
         url += `&search=${searchTerm}`;
       }
@@ -105,18 +116,18 @@ export default function CategoryPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch categories');
+        throw new Error("Failed to fetch categories");
       }
 
       const data: CategoryResponse = await response.json();
       setCategories(data.data.data);
       setPagination(data.data.pagination);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error("Error fetching categories:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load categories',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load categories",
+        variant: "destructive",
       });
     } finally {
       setIsPageLoading(false);
@@ -136,10 +147,10 @@ export default function CategoryPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -158,9 +169,9 @@ export default function CategoryPage() {
           title="Categories"
           description="Manage your product categories"
           breadcrumbSegments={[
-            { name: 'Home', href: '/' },
-            { name: 'Inventory', href: '/inventory' },
-            { name: 'Categories', href: '/inventory/category', current: true },
+            { name: "Home", href: "/" },
+            { name: "Inventory", href: "/inventory" },
+            { name: "Categories", href: "/inventory/category", current: true },
           ]}
           actions={
             <Button>
@@ -172,7 +183,10 @@ export default function CategoryPage() {
 
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <form onSubmit={handleSearch} className="flex w-full sm:w-auto gap-2">
+            <form
+              onSubmit={handleSearch}
+              className="flex w-full sm:w-auto gap-2"
+            >
               <Input
                 placeholder="Search categories..."
                 value={searchTerm}
@@ -190,8 +204,8 @@ export default function CategoryPage() {
             </form>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Select 
-                value={sortBy} 
+              <Select
+                value={sortBy}
                 onValueChange={(value) => {
                   setSortBy(value);
                   setCurrentPage(1);
@@ -206,8 +220,8 @@ export default function CategoryPage() {
                 </SelectContent>
               </Select>
 
-              <Select 
-                value={sortOrder} 
+              <Select
+                value={sortOrder}
                 onValueChange={(value) => {
                   setSortOrder(value);
                   setCurrentPage(1);
@@ -235,24 +249,37 @@ export default function CategoryPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">Description</TableHead>
-                      <TableHead className="hidden md:table-cell">Created</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Description
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Created
+                      </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {categories.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell
+                          colSpan={4}
+                          className="text-center py-8 text-muted-foreground"
+                        >
                           No categories found
                         </TableCell>
                       </TableRow>
                     ) : (
                       categories.map((category) => (
                         <TableRow key={category.id}>
-                          <TableCell className="font-medium">{category.name}</TableCell>
-                          <TableCell className="hidden md:table-cell">{category.description}</TableCell>
-                          <TableCell className="hidden md:table-cell">{formatDate(category.createdAt)}</TableCell>
+                          <TableCell className="font-medium">
+                            {category.name}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {category.description}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {formatDate(category.createdAt)}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button size="icon" variant="ghost">
@@ -273,7 +300,8 @@ export default function CategoryPage() {
               {pagination && (
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Showing {pagination.total_display} of {pagination.total_data} results
+                    Showing {pagination.total_display} of{" "}
+                    {pagination.total_data} results
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -284,18 +312,20 @@ export default function CategoryPage() {
                     >
                       Previous
                     </Button>
-                    
+
                     {pagination.detail.map((page) => (
                       <Button
                         key={page}
-                        variant={page === pagination.current ? "default" : "outline"}
+                        variant={
+                          page === pagination.current ? "default" : "outline"
+                        }
                         size="sm"
                         onClick={() => handlePageChange(page)}
                       >
                         {page}
                       </Button>
                     ))}
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -305,7 +335,7 @@ export default function CategoryPage() {
                       Next
                     </Button>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Select
                       value={limit}

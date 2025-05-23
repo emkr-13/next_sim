@@ -27,6 +27,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
+
 interface Account {
   id: number;
   name: string;
@@ -105,9 +108,7 @@ export default function AccountsPage() {
         return;
       }
 
-      let url = `${
-        process.env.BASE_URL || "http://localhost:3080/api/"
-      }akun/all?page=${currentPage}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+      let url = `${BASE_URL}akun/all?page=${currentPage}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
 
       if (searchTerm) {
         url += `&search=${searchTerm}`;
