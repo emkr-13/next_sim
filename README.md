@@ -1,4 +1,4 @@
-# Next.js Inventory Management System
+# Next.js Inventory Management System (SIM)
 
 A modern inventory management system built with Next.js, featuring account management, inventory tracking, store management, and category organization.
 
