@@ -66,6 +66,11 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl">Inventory Management</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
+          <div className="mt-2 text-sm text-muted-foreground">
+            <p className="font-medium">Demo credentials:</p>
+            <p>Email: admin@mail.com</p>
+            <p>Password: password123</p>
+          </div>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
