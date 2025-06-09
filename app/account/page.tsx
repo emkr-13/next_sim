@@ -22,8 +22,6 @@ import { useToast } from "@/hooks/use-toast";
 import { User, Save } from "lucide-react";
 import { userApi } from "@/app/api/user";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
 
 export default function AccountPage() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -31,16 +29,42 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [fullname, setFullname] = useState("");
+  const [email, setEmail] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    } else if (!isLoading && isAuthenticated && user) {
-      setFullname(user.fullname || "");
-      setIsPageLoading(false);
-    }
-  }, [isAuthenticated, isLoading, router, user]);
+    const fetchProfile = async () => {
+      if (!isLoading && !isAuthenticated) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        const response = await userApi.getProfile();
+        if (response.success && response.data) {
+          setFullname(response.data.fullname);
+          setEmail(response.data.email);
+          setCreatedAt(response.data.createdAt);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        if (error instanceof Error && error.message === "No authentication token found") {
+          router.push("/login");
+          return;
+        }
+        toast({
+          title: "Error",
+          description: "Failed to fetch profile data",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPageLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [isAuthenticated, isLoading, router, toast]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +77,14 @@ export default function AccountPage() {
         title: "Success",
         description: "Profile updated successfully",
       });
+
+      // Refresh profile data after update
+      const response = await userApi.getProfile();
+      if (response.success && response.data) {
+        setFullname(response.data.fullname);
+        setEmail(response.data.email);
+        setCreatedAt(response.data.createdAt);
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
       if (error instanceof Error && error.message === "No authentication token found") {
@@ -109,7 +141,7 @@ export default function AccountPage() {
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
-                    value={user?.email || ""}
+                    value={email}
                     disabled
                     className="bg-muted/50"
                   />
@@ -124,26 +156,6 @@ export default function AccountPage() {
                     value={fullname}
                     onChange={(e) => setFullname(e.target.value)}
                     placeholder="Enter your full name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="joined">Account Created</Label>
-                  <Input
-                    id="joined"
-                    value={
-                      user?.usercreated
-                        ? new Date(user.usercreated).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )
-                        : ""
-                    }
-                    disabled
-                    className="bg-muted/50"
                   />
                 </div>
               </CardContent>
