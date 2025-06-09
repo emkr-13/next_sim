@@ -4,10 +4,24 @@ import * as React from 'react';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-
+import { createContext, useContext, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const ToastProvider = ToastPrimitives.Provider;
+interface Toast {
+  id: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  variant?: "default" | "destructive";
+}
+
+interface ToastContextValue {
+  toasts: Toast[];
+  toast: (toast: Omit<Toast, "id">) => void;
+  dismiss: (id: string) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
@@ -113,13 +127,64 @@ const ToastDescription = React.forwardRef<
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
-
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
+
+export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const toast = (newToast: Omit<Toast, "id">) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts((currentToasts) => [...currentToasts, { ...newToast, id }]);
+
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+      dismiss(id);
+    }, 5000);
+  };
+
+  const dismiss = (id: string) => {
+    setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== id));
+  };
+
+  return (
+    <ToastContext.Provider value={{ toasts, toast, dismiss }}>
+      <ToastPrimitives.Provider>
+        {children}
+        <div className="fixed bottom-0 right-0 z-50 p-4 space-y-4">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`p-4 rounded-md shadow-lg ${
+                toast.variant === "destructive"
+                  ? "bg-red-600 text-white"
+                  : "bg-white dark:bg-gray-800"
+              }`}
+            >
+              {toast.title && (
+                <div className="font-semibold">{toast.title}</div>
+              )}
+              {toast.description && <div>{toast.description}</div>}
+              {toast.action}
+            </div>
+          ))}
+        </div>
+        <ToastViewport />
+      </ToastPrimitives.Provider>
+    </ToastContext.Provider>
+  );
+};
+
+export function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  return context;
+}
 
 export {
   type ToastProps,
   type ToastActionElement,
-  ToastProvider,
   ToastViewport,
   Toast,
   ToastTitle,

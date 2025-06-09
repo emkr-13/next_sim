@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 import PageHeader from "@/components/PageHeader";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { User, Save } from "lucide-react";
+import { userApi } from "@/app/api/user";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
@@ -46,31 +47,19 @@ export default function AccountPage() {
     setIsUpdating(true);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      const response = await fetch(`${BASE_URL}user/edit`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fullname }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
-      }
-
+      await userApi.updateProfile({ fullname });
+      
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
     } catch (error) {
       console.error("Error updating profile:", error);
+      if (error instanceof Error && error.message === "No authentication token found") {
+        router.push("/login");
+        return;
+      }
+      
       toast({
         title: "Error",
         description: "Failed to update profile",
