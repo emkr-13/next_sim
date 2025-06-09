@@ -8,7 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Edit, Trash, User } from "lucide-react";
+import { Plus, Search, Edit, Trash } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -26,42 +26,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  accountsApi, 
+  AccountType, 
+  Account, 
+  PaginationData,
+  CreateAccount,
+  UpdateAccount 
+} from "@/app/api/accounts";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+type AccountFormData = CreateAccount;
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
-
-interface Account {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  type: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-interface PaginationData {
-  total_data: string;
-  total_page: number;
-  total_display: number;
-  first_page: boolean;
-  last_page: boolean;
-  prev: number;
-  current: number;
-  next: number;
-  detail: number[];
-}
-
-interface AccountResponse {
-  success: boolean;
-  message: string;
-  data: {
-    data: Account[];
-    pagination: PaginationData;
-  };
-}
 
 export default function AccountsPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -78,6 +65,20 @@ export default function AccountsPage() {
   const [accountType, setAccountType] = useState<string>("");
   const [isSearching, setIsSearching] = useState(false);
 
+  // Dialog states
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [formData, setFormData] = useState<AccountFormData>({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    type: AccountType.CUSTOMER,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/login");
@@ -87,50 +88,22 @@ export default function AccountsPage() {
     if (!isLoading && isAuthenticated) {
       fetchAccounts();
     }
-  }, [
-    isAuthenticated,
-    isLoading,
-    router,
-    currentPage,
-    limit,
-    sortBy,
-    sortOrder,
-    accountType,
-  ]);
+  }, [isAuthenticated, isLoading, router, currentPage, limit, sortBy, sortOrder, accountType]);
 
   const fetchAccounts = async () => {
     try {
       setIsPageLoading(true);
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      let url = `${BASE_URL}akun/all?page=${currentPage}&limit=${limit}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
-
-      if (searchTerm) {
-        url += `&search=${searchTerm}`;
-      }
-
-      if (accountType && accountType !== "all") {
-        url += `&type=${accountType}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await accountsApi.getAll({
+        page: currentPage,
+        limit,
+        sortBy,
+        sortOrder,
+        search: searchTerm,
+        type: accountType === "all" ? undefined : accountType,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch accounts");
-      }
-
-      const data: AccountResponse = await response.json();
-      setAccounts(data.data.data);
-      setPagination(data.data.pagination);
+      setAccounts(response.data.data);
+      setPagination(response.data.pagination);
     } catch (error) {
       console.error("Error fetching accounts:", error);
       toast({
@@ -144,6 +117,82 @@ export default function AccountsPage() {
     }
   };
 
+  const handleCreateAccount = async () => {
+    try {
+      setIsSubmitting(true);
+      await accountsApi.create(formData);
+      toast({
+        title: "Success",
+        description: "Account created successfully",
+      });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        type: AccountType.CUSTOMER,
+      });
+      fetchAccounts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateAccount = async () => {
+    if (!selectedAccount) return;
+
+    try {
+      setIsSubmitting(true);
+      await accountsApi.update(selectedAccount.id, formData);
+      toast({
+        title: "Success",
+        description: "Account updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedAccount(null);
+      fetchAccounts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!selectedAccount) return;
+
+    try {
+      setIsSubmitting(true);
+      await accountsApi.delete(selectedAccount.id);
+      toast({
+        title: "Success",
+        description: "Account deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedAccount(null);
+      fetchAccounts();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
@@ -153,6 +202,28 @@ export default function AccountsPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleEditClick = async (account: Account) => {
+    try {
+      const response = await accountsApi.detail(account.id);
+      const accountDetail = response.data;
+      setSelectedAccount(accountDetail);
+      setFormData({
+        name: accountDetail.name,
+        phone: accountDetail.phone,
+        email: accountDetail.email,
+        address: accountDetail.address,
+        type: accountDetail.type as AccountType,
+      });
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch account details",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -182,7 +253,7 @@ export default function AccountsPage() {
             { name: "Accounts", href: "/accounts", current: true },
           ]}
           actions={
-            <Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Account
             </Button>
@@ -191,10 +262,7 @@ export default function AccountsPage() {
 
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <form
-              onSubmit={handleSearch}
-              className="flex w-full sm:w-auto gap-2"
-            >
+            <form onSubmit={handleSearch} className="flex w-full sm:w-auto gap-2">
               <Input
                 placeholder="Search accounts..."
                 value={searchTerm}
@@ -275,39 +343,26 @@ export default function AccountsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Contact
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Type
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Created
-                      </TableHead>
+                      <TableHead className="hidden md:table-cell">Contact</TableHead>
+                      <TableHead className="hidden md:table-cell">Type</TableHead>
+                      <TableHead className="hidden md:table-cell">Created</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {accounts.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={5}
-                          className="text-center py-8 text-muted-foreground"
-                        >
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           No accounts found
                         </TableCell>
                       </TableRow>
                     ) : (
                       accounts.map((account) => (
                         <TableRow key={account.id}>
-                          <TableCell className="font-medium">
-                            {account.name}
-                          </TableCell>
+                          <TableCell className="font-medium">{account.name}</TableCell>
                           <TableCell className="hidden md:table-cell">
                             <div>{account.email}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {account.phone}
-                            </div>
+                            <div className="text-sm text-muted-foreground">{account.phone}</div>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             <span
@@ -325,10 +380,21 @@ export default function AccountsPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
-                              <Button size="icon" variant="ghost">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => handleEditClick(account)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => {
+                                  setSelectedAccount(account);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
                                 <Trash className="h-4 w-4" />
                               </Button>
                             </div>
@@ -343,8 +409,7 @@ export default function AccountsPage() {
               {pagination && (
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    Showing {pagination.total_display} of{" "}
-                    {pagination.total_data} results
+                    Showing {pagination.total_display} of {pagination.total_data} results
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -359,9 +424,7 @@ export default function AccountsPage() {
                     {pagination.detail.map((page) => (
                       <Button
                         key={page}
-                        variant={
-                          page === pagination.current ? "default" : "outline"
-                        }
+                        variant={page === pagination.current ? "default" : "outline"}
                         size="sm"
                         onClick={() => handlePageChange(page)}
                       >
@@ -403,6 +466,186 @@ export default function AccountsPage() {
             </>
           )}
         </div>
+
+        {/* Create Account Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Account</DialogTitle>
+              <DialogDescription>
+                Add a new customer or supplier account to the system.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Account Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: AccountType) =>
+                    setFormData({ ...formData, type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AccountType.CUSTOMER}>Customer</SelectItem>
+                    <SelectItem value={AccountType.SUPPLIER}>Supplier</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateAccount} disabled={isSubmitting}>
+                {isSubmitting ? <LoadingSpinner size="sm" /> : "Create Account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Account Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Account</DialogTitle>
+              <DialogDescription>
+                Update the account information.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">Address</Label>
+                <Textarea
+                  id="edit-address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">Account Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: AccountType) =>
+                    setFormData({ ...formData, type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AccountType.CUSTOMER}>Customer</SelectItem>
+                    <SelectItem value={AccountType.SUPPLIER}>Supplier</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateAccount} disabled={isSubmitting}>
+                {isSubmitting ? <LoadingSpinner size="sm" /> : "Update Account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Account Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Account</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this account? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <LoadingSpinner size="sm" /> : "Delete Account"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </ErrorBoundary>
     </Layout>
   );

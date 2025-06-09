@@ -1,18 +1,18 @@
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3080/api/";
 
-interface Account {
+export interface Account {
   id: number;
   name: string;
   phone: string;
   email: string;
   address: string;
-  type: string;
+  type: AccountType;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 }
 
-interface PaginationData {
+export interface PaginationData {
   total_data: string;
   total_page: number;
   total_display: number;
@@ -24,7 +24,7 @@ interface PaginationData {
   detail: number[];
 }
 
-interface AccountResponse {
+export interface AccountResponse {
   success: boolean;
   message: string;
   data: {
@@ -33,13 +33,13 @@ interface AccountResponse {
   };
 }
 
-interface AccountDetailResponse {
+export interface AccountDetailResponse {
   success: boolean;
   message: string;
   data: Account;
 }
 
-interface AccountQueryParams {
+export interface AccountQueryParams {
   page?: number;
   limit?: string | number;
   sortBy?: string;
@@ -48,12 +48,12 @@ interface AccountQueryParams {
   type?: string;
 }
 
-enum AccountType {
+export enum AccountType {
   CUSTOMER = "customer",
   SUPPLIER = "supplier"
 }
 
-interface CreateAccount {
+export interface CreateAccount {
   name: string;
   phone: string;
   email: string;
@@ -61,15 +61,13 @@ interface CreateAccount {
   type: AccountType;
 }
 
-interface UpdateAccount {
+export interface UpdateAccount {
   name: string;
   phone: string;
   email: string;
   address: string;
   type: AccountType;
 }
-
-
 
 export const accountsApi = {
   getAll: async (params: AccountQueryParams) => {
@@ -226,7 +224,8 @@ export const accountsApi = {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to delete account");
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to delete account");
     }
 
     return response.json();
@@ -242,14 +241,16 @@ export const accountsApi = {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ id }),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch account details");
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to fetch account details");
     }
 
-    return response.json()as Promise<AccountDetailResponse>;
+    return response.json() as Promise<AccountDetailResponse>;
   },
 }; 
